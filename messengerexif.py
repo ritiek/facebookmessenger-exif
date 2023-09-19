@@ -3,6 +3,7 @@ from pathlib import Path
 import glob
 from datetime import datetime
 import subprocess
+import os
 import sys
 import argparse
 
@@ -117,36 +118,39 @@ def run_exiftool(
         print(f'file "{str(path)}" does not exist!')
         FILES_NOT_FOUND.append(str(path))
     else:
-        if is_video:
-            arguments.append("-api")
-            arguments.append("quicktime")
-            arguments.append(f"-CreationDate=\"{obj['creation_timestamp']}\"")
-            arguments.append(f"-dateTimeOriginal=\"{obj['creation_timestamp']}\"")
-            arguments.append(f"-CreateDate=\"{obj['creation_timestamp']}\"")
-            arguments.append(f"-ModifyDate=\"{obj['creation_timestamp']}\"")
-            arguments.append(f"-TrackCreateDate=\"{obj['creation_timestamp']}\"")
-        arguments.append(f"-CreationDate=\"{obj['creation_timestamp']}\"")
-        arguments.append(f"-dateTimeOriginal=\"{obj['creation_timestamp']}\"")
-        if not backup:
-            arguments.append("-overwrite_original")
-        print(f"Running {' '.join([str(exiftool_path)]+arguments+[str(path)])}")
-        try:
-            subprocess.run([exiftool_path] + arguments + [path], check=True, capture_output=True)
-            print(f"[{TOTAL_FIXED}] Appended exif data succesfully!")
-            TOTAL_FIXED += 1
-        except subprocess.CalledProcessError as e:
-            if "Not a valid JPG (looks more like a PNG)" in str(e.stderr):
-                print(f"Updating to PNG {str(path)}")
-                path.rename(path.with_suffix('.png'))
-                obj["uri"] = obj["uri"].with_suffix('.png')
-                return run_exiftool(
-                    exiftool_path, folder_path, obj, is_video=is_video, backup=backup, fail_fast=fail_fast
-                )
-            print(f"exiftool error!")
-            if fail_fast:
-                sys.exit(1)
-            FILES_WITH_ERRORS.append(str(path))
-            print(e)
+        # if is_video:
+        #     arguments.append("-api")
+        #     arguments.append("quicktime")
+        #     arguments.append(f"-CreationDate=\"{obj['creation_timestamp']}\"")
+        #     arguments.append(f"-dateTimeOriginal=\"{obj['creation_timestamp']}\"")
+        #     arguments.append(f"-CreateDate=\"{obj['creation_timestamp']}\"")
+        #     arguments.append(f"-ModifyDate=\"{obj['creation_timestamp']}\"")
+        #     arguments.append(f"-TrackCreateDate=\"{obj['creation_timestamp']}\"")
+        # arguments.append(f"-CreationDate=\"{obj['creation_timestamp']}\"")
+        # arguments.append(f"-dateTimeOriginal=\"{obj['creation_timestamp']}\"")
+        # if not backup:
+        #     arguments.append("-overwrite_original")
+        # print(f"Running {' '.join([str(exiftool_path)]+arguments+[str(path)])}")
+        # try:
+        #     result = [str(exiftool_path)] + arguments + [str(path)]
+        #     print(" ".join(result))
+        #     subprocess.run([exiftool_path] + arguments + [path], check=True, capture_output=True)
+        os.utime(path, (obj['creation_timestamp'], obj['creation_timestamp']))
+        print(f"[{TOTAL_FIXED}] Appended exif data succesfully!")
+        TOTAL_FIXED += 1
+        # except subprocess.CalledProcessError as e:
+        #     if "Not a valid JPG (looks more like a PNG)" in str(e.stderr):
+        #         print(f"Updating to PNG {str(path)}")
+        #         path.rename(path.with_suffix('.png'))
+        #         obj["uri"] = obj["uri"].with_suffix('.png')
+        #         return run_exiftool(
+        #             exiftool_path, folder_path, obj, is_video=is_video, backup=backup, fail_fast=fail_fast
+        #         )
+        #     print(f"exiftool error!")
+        #     if fail_fast:
+        #         sys.exit(1)
+        #     FILES_WITH_ERRORS.append(str(path))
+        #     print(e)
     print()
 
 
@@ -193,7 +197,7 @@ def normalize_json(obj, timestamp=None):
         obj["creation_timestamp"] = normalize_timestamp(timestamp)
     else:
         raise ValueError(f"{obj} is lacking creation_timestamp!")
-    obj["creation_timestamp"] = format_timestamp(obj["creation_timestamp"])
+    # obj["creation_timestamp"] = format_timestamp(obj["creation_timestamp"])
     obj["uri"] = Path(obj["uri"])
     return obj
 
